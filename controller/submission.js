@@ -5,9 +5,73 @@ let tempStepData = {};
 
 
 // exports.saveStepResponse = async (req, res) => {
-//      const { step,title, answers } = req.body;
-//      const userId = req.user.user;
+//     const { step, title, answers,subjectCode} = req.body;
+//     const userId = req.user.user;
+   
+//     if (["step2", "step3", "step4", "step5"].includes(step)) {
+//         if (!subjectCode) {
+//             return res.status(200).json({ success: false, message: "Please provide subjectCode" });
+//         }
+//         if (!title) {
+//             return res.status(200).json({ success: false, message: "Please provide title" });
+//         }
+//     }
 //     try {
+//         const questions = await Question.findOne({ step,subjectCode });
+//         if (!questions) {
+//             return res.status(404).json({ message: "Questions not found for this step." });
+//         }
+
+//             // Safely parse the attendance data
+//     let answerData;
+//     if (typeof answers === "string") {
+//         answerData = JSON.parse(answers);
+//     } else if (typeof answers === "object") {
+//         answerData = answers;
+//     } else {
+//       return res.status(400).json({
+//         message: "Invalid format for attendance data",
+//         success: false,
+//       });
+//     }
+      
+//       answerData?.forEach((answer) => {
+//             const question = questions.questions.find(q => q.id === answer.questionId);
+
+//             if (question) {
+//                 if (question.type === "multiselect") {
+//                     question.option?.forEach(opt => {
+//                         opt.isChecked = false;
+//                     });
+
+//                     answer.optionsSelected.forEach(selectedOptionId => {
+//                         const option = question.option.find(opt => opt.id === selectedOptionId);
+//                         if (option) {
+//                             option.isChecked = true;
+//                         }
+//                     });
+
+//                 } else if (question.type === "option") {
+//                     question.option.forEach(opt => {
+//                         opt.isChecked = false;
+//                     });
+
+//                     if (answer.optionsSelected && answer.optionsSelected.length > 0) {
+//                         answer.optionsSelected.forEach(selectedOptionId => {
+//                             const option = question.option.find(opt => opt.id === selectedOptionId);
+//                             if (option) {
+//                                 option.isChecked = true;
+//                             }
+//                         });
+//                     }
+
+//                 } else if (question.type === "input") {
+//                     question.answer = answer.answer || null;
+//                 }
+//                 question.answer = answer.answer || "";
+//             }
+//         });
+//         await questions.save();
 
 //         let submission = await Submission.findOne({ userId, step });
 
@@ -15,51 +79,49 @@ let tempStepData = {};
 //             submission.answers = answers;
 //             await submission.save();
 //         } else {
-//             submission = new Submission({ userId, step,title, answers });
+//             submission = new Submission({ userId, step,subjectCode, title, answers });
 //             await submission.save();
 //         }
 
 //         res.status(200).json({ message: "Step submitted successfully", data: submission });
 //     } catch (error) {
+//         console.error("Error saving step data:", error);
 //         res.status(500).json({ message: "Error saving step data", error });
 //     }
 // };
 
-//  
-
-
 exports.saveStepResponse = async (req, res) => {
-    const { step, title, answers,subjectCode} = req.body;
+    const { step, title, answers, subjectCode } = req.body;
     const userId = req.user.user;
-   
+
     if (["step2", "step3", "step4", "step5"].includes(step)) {
         if (!subjectCode) {
             return res.status(200).json({ success: false, message: "Please provide subjectCode" });
         }
-        if (!title) {
-            return res.status(200).json({ success: false, message: "Please provide title" });
-        }
+        // if (!title) {
+        //     return res.status(200).json({ success: false, message: "Please provide title" });
+        // }
     }
     try {
-        const questions = await Question.findOne({ step,subjectCode });
+        const questions = await Question.findOne({ step, subjectCode });
         if (!questions) {
             return res.status(404).json({ message: "Questions not found for this step." });
         }
 
-            // Safely parse the attendance data
-    let answerData;
-    if (typeof answers === "string") {
-        answerData = JSON.parse(answers);
-    } else if (typeof answers === "object") {
-        answerData = answers;
-    } else {
-      return res.status(400).json({
-        message: "Invalid format for attendance data",
-        success: false,
-      });
-    }
-      
-      answerData?.forEach((answer) => {
+        // Safely parse the attendance data
+        let answerData;
+        if (typeof answers === "string") {
+            answerData = JSON.parse(answers);
+        } else if (typeof answers === "object") {
+            answerData = answers;
+        } else {
+            return res.status(400).json({
+                message: "Invalid format for attendance data",
+                success: false,
+            });
+        }
+
+        answerData?.forEach((answer) => {
             const question = questions.questions.find(q => q.id === answer.questionId);
 
             if (question) {
@@ -68,7 +130,15 @@ exports.saveStepResponse = async (req, res) => {
                         opt.isChecked = false;
                     });
 
-                    answer.optionsSelected.forEach(selectedOptionId => {
+                    let optionsSelected = [];
+                    // Split string into an array if `optionsSelected` is a string
+                    if (typeof answer.optionsSelected === "string") {
+                        optionsSelected = answer.optionsSelected.split(",");
+                    } else if (Array.isArray(answer.optionsSelected)) {
+                        optionsSelected = answer.optionsSelected;
+                    }
+
+                    optionsSelected.forEach(selectedOptionId => {
                         const option = question.option.find(opt => opt.id === selectedOptionId);
                         if (option) {
                             option.isChecked = true;
@@ -80,14 +150,20 @@ exports.saveStepResponse = async (req, res) => {
                         opt.isChecked = false;
                     });
 
-                    if (answer.optionsSelected && answer.optionsSelected.length > 0) {
-                        answer.optionsSelected.forEach(selectedOptionId => {
-                            const option = question.option.find(opt => opt.id === selectedOptionId);
-                            if (option) {
-                                option.isChecked = true;
-                            }
-                        });
+                    let optionsSelected = [];
+                    // Split string into an array if `optionsSelected` is a string
+                    if (typeof answer.optionsSelected === "string") {
+                        optionsSelected = answer.optionsSelected.split(",");
+                    } else if (Array.isArray(answer.optionsSelected)) {
+                        optionsSelected = answer.optionsSelected;
                     }
+
+                    optionsSelected.forEach(selectedOptionId => {
+                        const option = question.option.find(opt => opt.id === selectedOptionId);
+                        if (option) {
+                            option.isChecked = true;
+                        }
+                    });
 
                 } else if (question.type === "input") {
                     question.answer = answer.answer || null;
@@ -95,6 +171,7 @@ exports.saveStepResponse = async (req, res) => {
                 question.answer = answer.answer || "";
             }
         });
+
         await questions.save();
 
         let submission = await Submission.findOne({ userId, step });
@@ -103,7 +180,7 @@ exports.saveStepResponse = async (req, res) => {
             submission.answers = answers;
             await submission.save();
         } else {
-            submission = new Submission({ userId, step,subjectCode, title, answers });
+            submission = new Submission({ userId, step, subjectCode, title, answers });
             await submission.save();
         }
 
@@ -113,6 +190,7 @@ exports.saveStepResponse = async (req, res) => {
         res.status(500).json({ message: "Error saving step data", error });
     }
 };
+
 
 const resetQuestionData = async (userId) => {
 
