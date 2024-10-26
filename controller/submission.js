@@ -187,10 +187,10 @@ exports.saveStepResponse = async (req, res) => {
             await submission.save();
         }
 
-        res.status(200).json({ message: "Step submitted successfully", data: submission });
+        res.status(200).json({success:true, message: "Step submitted successfully"});
     } catch (error) {
         console.error("Error saving step data:", error);
-        res.status(500).json({ message: "Error saving step data", error });
+        res.status(500).json({success:false, message: "Error saving step data", error });
     }
 };
 
