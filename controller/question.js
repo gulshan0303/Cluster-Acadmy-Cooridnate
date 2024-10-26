@@ -385,11 +385,11 @@ exports.getAdviceData = async(req,res) => {
 
 exports.getMathDataStep_5 = async(req,res) => {
     try {
-        const step4 = await Question.findOne({step:"step5",subjectCode:"2"});
-        if(!step4){
+        const step5 = await Question.findOne({step:"step5",subjectCode:"2"});
+        if(!step5){
             return res.status(200).json({success:false,message:"Math data not found for step5"})
         }
-        return res.status(200).json({success:true,message:"step5 Math data",step4})
+        return res.status(200).json({success:true,message:"step5 Math data",data:step5})
     } catch (error) {
         console.error(error);
         return res.status(500).json({
@@ -401,11 +401,11 @@ exports.getMathDataStep_5 = async(req,res) => {
 
 exports.getMathDataStep_6 = async(req,res) => {
     try {
-        const step4 = await Question.findOne({step:"step6",subjectCode:"2"});
-        if(!step4){
+        const step6 = await Question.findOne({step:"step6",subjectCode:"2"});
+        if(!step6){
             return res.status(200).json({success:false,message:"Math data not found for step6"})
         }
-        return res.status(200).json({success:true,message:"step6 Math data",step4})
+        return res.status(200).json({success:true,message:"step6 Math data",data:step6})
     } catch (error) {
         console.error(error);
         return res.status(500).json({
