@@ -34,6 +34,10 @@ app.use('/api/v1/submit',submitRoutes);
 // Error Handling Middleware
 app.use(errorHandler);
 
+app.get("/",(req,res)=>{
+     return res.json({success:true,message:"Api is working.."})
+})
+
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
