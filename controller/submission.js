@@ -98,25 +98,30 @@ exports.saveStepResponse = async (req, res) => {
         if (!subjectCode) {
             return res.status(200).json({ success: false, message: "Please provide subjectCode" });
         }
-        // if (!title) {
-        //     return res.status(200).json({ success: false, message: "Please provide title" });
-        // }
     }
+
     try {
         const questions = await Question.findOne({ step, subjectCode });
         if (!questions) {
             return res.status(404).json({ message: "Questions not found for this step." });
         }
 
-        // Safely parse the attendance data
+        // Safely parse the answers data
         let answerData;
         if (typeof answers === "string") {
-            answerData = JSON.parse(answers);
+            try {
+                answerData = JSON.parse(answers);
+            } catch (e) {
+                return res.status(400).json({
+                    message: "Invalid format for answers data",
+                    success: false,
+                });
+            }
         } else if (typeof answers === "object") {
             answerData = answers;
         } else {
             return res.status(400).json({
-                message: "Invalid format for attendance data",
+                message: "Invalid format for answers data",
                 success: false,
             });
         }
@@ -131,7 +136,6 @@ exports.saveStepResponse = async (req, res) => {
                     });
 
                     let optionsSelected = [];
-                    // Split string into an array if `optionsSelected` is a string
                     if (typeof answer.optionsSelected === "string") {
                         optionsSelected = answer.optionsSelected.split(",");
                     } else if (Array.isArray(answer.optionsSelected)) {
@@ -151,7 +155,6 @@ exports.saveStepResponse = async (req, res) => {
                     });
 
                     let optionsSelected = [];
-                    // Split string into an array if `optionsSelected` is a string
                     if (typeof answer.optionsSelected === "string") {
                         optionsSelected = answer.optionsSelected.split(",");
                     } else if (Array.isArray(answer.optionsSelected)) {
@@ -177,10 +180,10 @@ exports.saveStepResponse = async (req, res) => {
         let submission = await Submission.findOne({ userId, step });
 
         if (submission) {
-            submission.answers = answers;
+            submission.answers = answerData;
             await submission.save();
         } else {
-            submission = new Submission({ userId, step, subjectCode, title, answers });
+            submission = new Submission({ userId, step, subjectCode, title, answers: answerData });
             await submission.save();
         }
 
@@ -190,6 +193,7 @@ exports.saveStepResponse = async (req, res) => {
         res.status(500).json({ message: "Error saving step data", error });
     }
 };
+
 
 
 const resetQuestionData = async (userId) => {
