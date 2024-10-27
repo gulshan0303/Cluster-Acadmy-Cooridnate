@@ -351,8 +351,7 @@ exports.getHindiDataStep_4 = async(req,res) => {
 
 exports.getfeedback = async(req,res) => {
     try {
-        console.log("first")
-        const feedback = await Question.findOne({step:"step5"});
+        const feedback = await Question.findOne({step:"feedback"});
         if(!feedback){
             return res.status(200).json({success:false,message:"feedback data not found!"})
         }
@@ -368,7 +367,7 @@ exports.getfeedback = async(req,res) => {
 
 exports.getAdviceData = async(req,res) => {
     try {
-        const adviceData = await Question.findOne({step:"step6",subjectCode:null});
+        const adviceData = await Question.findOne({step:"advice"});
         if(!adviceData){
             return res.status(200).json({success:false,message:"Advice data not found!"})
         }
