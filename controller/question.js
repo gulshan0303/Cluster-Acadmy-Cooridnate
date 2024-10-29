@@ -106,92 +106,29 @@ exports.createSingleQuestion = async (req, res, next) => {
   }
 };
 
-exports.createAssociativeQuestion = async (req, res, next) => {
+const resetQuestionData = async (userId,stepId,subjectCode) => {
   try {
-    const { subjectCode, step, subjectName, title, questions } = req.body;
-
-    // Validate input
-    if (!Array.isArray(questions)) {
-      return next(
-        new customError("Invalid questions data. Expected an array.", 400)
-      );
-    }
-
-    // Fetch the last question for the given subject code
-    const lastQuestion = await Question.findOne({ subjectCode })
-      .sort({ "questions.id": -1 })
-      .lean();
-
-    // Determine the starting ID for new questions
-    let nextQuestionId =
-      lastQuestion && lastQuestion.questions.length > 0
-        ? getNextId(
-            lastQuestion.questions[lastQuestion.questions.length - 1].id
-          )
-        : "A";
-
-    // Process each question to generate IDs dynamically
-    const processedQuestions = questions.map((question) => {
-      const questionId = nextQuestionId;
-      nextQuestionId = getNextId(nextQuestionId);
-
-      // Generate dynamic IDs for sub-questions
-      let nextSubId = `${questionId}1`;
-      const processedSubQuestions = (question.subQuestions || []).map(
-        (subQuestion) => {
-          const subQuestionId = nextSubId;
-          nextSubId = getNextSubId(questionId, nextSubId);
-
-          let nextOptionId = `${subQuestionId}-a`;
-          const processedOptions = (subQuestion.options || []).map((option) => {
-            const optionId = nextOptionId;
-            const optionChar = optionId.charCodeAt(optionId.length - 1);
-            nextOptionId = `${subQuestionId}-${String.fromCharCode(
-              optionChar + 1
-            )}`;
-
-            return {
-              id: optionId,
-              text: option.text,
-            };
-          });
-
-          // Ensure type is included for subQuestions
-          return {
-            id: subQuestionId,
-            text: subQuestion.text,
-            type: subQuestion.type, // Explicitly include type here
-            options: processedOptions,
-          };
+      const allStepSubmissions = await Submission.find({ userId,step:stepId, isFinalSubmission: false });
+      if (allStepSubmissions.length === 0) {
+        const defaultStep = stepId;
+        const defaultSubjectCode = subjectCode;
+        const questions = await Question.findOne({ step: defaultStep, subjectCode: defaultSubjectCode });
+        if (questions) {
+            questions.questions.forEach((question) => {
+                if (question.type === "multiselect" || question.type === "option") {
+                    question.option.forEach((opt) => {
+                        opt.isChecked = false; 
+                    });
+                }
+                question.answer = ""; 
+            });
+            await questions.save();
         }
-      );
 
-      // Always include the `type` field for main questions
-      return {
-        id: questionId,
-        text: question.text,
-        type: question.type, // Explicitly include the type field
-        subQuestions: processedSubQuestions,
-      };
-    });
-
-    // Create new question object for associative type
-    const questionData = {
-      title,
-      step,
-      subjectCode,
-      subjectName,
-      type: "associative",
-      questions: processedQuestions,
-    };
-
-    const newQuestion = new Question(questionData);
-    await newQuestion.save();
-
-    successResponse(res, 201, "Question created!", newQuestion);
+        return;
+    }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error.", error: error.message });
+      console.error("Error resetting question data:", error);
   }
 };
 
@@ -200,12 +137,16 @@ exports.getQuestions = async (req, res) => {
   try {
     const { stepId } = req.params;
     const subjectCode = req.query.subjectCode;
+    const userId = req.user.user;
+    await resetQuestionData(userId,stepId,subjectCode);
+
     // Validate inputs for step2
     if (stepId === "step2" && !subjectCode) {
       return res
         .status(400)
         .json({ success: false, message: "Please provide subjectCode" });
     }
+
 
     // Fetch the question based on step and subjectCode
     const question = await Question.findOne({
@@ -239,8 +180,9 @@ exports.getQuestions = async (req, res) => {
 exports.getFilterHindiDataStep_3 = async (req, res) => {
     try {
         const {associatedQuestionCode } = req.query;
+        const userId = req.user.user;
         let filterQuery = { step: "step3",subjectCode:"1" };
-    
+        await resetQuestionData(userId,filterQuery.step,filterQuery.subjectCode);
         // Add associatedQuestionCode filter if provided
         if (associatedQuestionCode) {
             const associatedCodesArray = associatedQuestionCode.split(',').map(code => code.trim());
@@ -275,6 +217,9 @@ exports.getFilterMathDataStep_3 = async (req, res) => {
     try {
         const {associatedQuestionCode } = req.query;
         let filterQuery = { step: "step3",subjectCode:"2" };
+        const userId = req.user.user;
+        await resetQuestionData(userId,filterQuery.step,filterQuery.subjectCode);
+
         const questions = await Question.find(filterQuery);
   
         if (!questions.length) {
@@ -303,7 +248,10 @@ exports.getFilterMathDataStep_4 = async (req, res) => {
     try {
         const {associatedQuestionCode } = req.query;
         let filterQuery = { step: "step4",subjectCode:"2" };
-  
+          
+        const userId = req.user.user;
+        await resetQuestionData(userId,filterQuery.step,filterQuery.subjectCode);
+
         // Add associatedQuestionCode filter if provided
         if (associatedQuestionCode) {
             const associatedCodesArray = associatedQuestionCode.split(',').map(code => code.trim());
@@ -335,6 +283,10 @@ exports.getFilterMathDataStep_4 = async (req, res) => {
 
 exports.getHindiDataStep_4 = async(req,res) => {
     try {
+
+      const userId = req.user.user;
+      await resetQuestionData(userId,"step4","1");
+
         const step4 = await Question.findOne({step:"step4",subjectCode:"1"});
         if(!step4){
             return res.status(200).json({success:false,message:"Hindi data not found for step4"})
@@ -351,6 +303,9 @@ exports.getHindiDataStep_4 = async(req,res) => {
 
 exports.getfeedback = async(req,res) => {
     try {
+      const userId = req.user.user;
+      await resetQuestionData(userId,"feedback",null);
+
         const feedback = await Question.findOne({step:"feedback"});
         if(!feedback){
             return res.status(200).json({success:false,message:"feedback data not found!"})
@@ -367,6 +322,9 @@ exports.getfeedback = async(req,res) => {
 
 exports.getAdviceData = async(req,res) => {
     try {
+      const userId = req.user.user;
+      await resetQuestionData(userId,"advice",null);
+
         const adviceData = await Question.findOne({step:"advice"});
         if(!adviceData){
             return res.status(200).json({success:false,message:"Advice data not found!"})
@@ -384,6 +342,9 @@ exports.getAdviceData = async(req,res) => {
 
 exports.getMathDataStep_5 = async(req,res) => {
     try {
+        
+           const userId = req.user.user;
+           await resetQuestionData(userId,"step5","2");
         const step5 = await Question.findOne({step:"step5",subjectCode:"2"});
         if(!step5){
             return res.status(200).json({success:false,message:"Math data not found for step5"})
@@ -400,6 +361,8 @@ exports.getMathDataStep_5 = async(req,res) => {
 
 exports.getMathDataStep_6 = async(req,res) => {
     try {
+      const userId = req.user.user;
+      await resetQuestionData(userId,"step6","2");
         const step6 = await Question.findOne({step:"step6",subjectCode:"2"});
         if(!step6){
             return res.status(200).json({success:false,message:"Math data not found for step6"})
@@ -416,6 +379,8 @@ exports.getMathDataStep_6 = async(req,res) => {
 
 exports.observationTeachersTime = async(req,res) => {
   try {
+    const userId = req.user.user;
+    await resetQuestionData(userId,"step7",null);
     const observation = await Question.findOne({step:"step7"});
     if(!observation){
         return res.status(200).json({success:false,message:"Observation data not found!"})

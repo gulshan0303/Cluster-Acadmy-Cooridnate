@@ -20,18 +20,17 @@ const {
 } = require('../controller/question');
 const { verifyToken } = require("../middleware/authentication");
 
-
 router.post('/single', createSingleQuestion);
 
 router.get('/school-details', verifyToken, schoolDetails);
 router.post('/inquiry-question', verifyToken, inquiryQuestion);
 
-router.get('/feedback-for-teachers', getfeedback);
-router.get('/advice-for-teachers',getAdviceData)
-router.get('/observation-teachers-Time',observationTeachersTime)
-router.get('/:stepId/filter-hindi-data', handleHindiDataFilter);
-router.get('/:stepId/filter-math-data', handleMathDataFilter);
-router.get('/:stepId', getQuestions);
+router.get('/feedback-for-teachers',verifyToken, getfeedback);
+router.get('/advice-for-teachers',verifyToken, getAdviceData);
+router.get('/observation-teachers-Time',verifyToken, observationTeachersTime);
+router.get('/:stepId/filter-hindi-data', verifyToken, handleHindiDataFilter);
+router.get('/:stepId/filter-math-data', verifyToken, handleMathDataFilter);
+router.get('/:stepId', verifyToken, getQuestions);
 
 function handleHindiDataFilter(req, res, next) {
     const { stepId } = req.params;
@@ -41,7 +40,7 @@ function handleHindiDataFilter(req, res, next) {
         case 'step4':
             return getHindiDataStep_4(req, res);
         default:
-            return res.status(200).json({ message: 'Invalid step ID for Hindi data filter.' });
+            return res.status(400).json({ message: 'Invalid step ID for Hindi data filter.' });
     }
 }
 

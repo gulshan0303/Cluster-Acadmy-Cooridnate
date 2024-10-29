@@ -63,6 +63,7 @@ const questionItemSchema = new mongoose.Schema({
     type: { type: String, required: true },
     subtitle:{type:String,default:""},
     option:{type:[optionSchema],default:[]},
+    typeOfInput:{type:String,enum: ['text', 'number'],default: 'text' },
     answer: { type: String, default: null }
 }, { _id: false }); // Use `_id: false` to avoid automatic creation of `_id` field for subdocuments
 

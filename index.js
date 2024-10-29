@@ -11,7 +11,7 @@ const question = require("./routes/question")
 const userRoutes = require("./routes/user")
 const feedback = require("./routes/feedback")
 const submitRoutes = require("./routes/submitForm");
-
+const dashboardRoutes = require("./routes/dashboard")
 const app = express();
 const port = process.env.PORT || 3030;
 
@@ -30,6 +30,7 @@ app.use('/api/v1/question',question);
 app.use('/api/v1/user',userRoutes);
 app.use('/api/v1/feedback',feedback);
 app.use('/api/v1/submit',submitRoutes);
+app.use("/api/v1/dashboard",dashboardRoutes)
 
 // Error Handling Middleware
 app.use(errorHandler);

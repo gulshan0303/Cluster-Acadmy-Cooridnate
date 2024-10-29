@@ -21,18 +21,17 @@ const validateRegistrationInput = ({ email, password, phoneNo }) => {
 
 const registerUser = asyncHandler(async (req, res, next) => {
     try {
-        const { email, password, phoneNo } = req.body;
+        const { email, password, phoneNo,role } = req.body;
         validateRegistrationInput({ email, password, phoneNo });
         const [cacMatched, existingRegisteredCac] = await Promise.all([
             CacDetails.findOne({ cac_mobile: parseInt(phoneNo) }),
             User.findOne({ phoneNo: phoneNo }),
         ]);
-       
         if (!cacMatched) {
             throw new customError('Invalid CAC ID.', 200);
         }
         if (existingRegisteredCac) {
-            throw new customError('CAC is already registered.', 409);
+            throw new customError('CAC is already registered.', 200);
         }
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -47,6 +46,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
             districtId: cacMatched.udise_dist_code || '',
             districtName: cacMatched.Dist || '',
             email: email || '',
+            role:role || 'admin',
             password: hashedPassword,
         });
 
@@ -179,6 +179,19 @@ const getSingleUser = asyncHandler(async (req, res, next) => {
     }
 })
 
+const getProfile = asyncHandler(async(req,res) => {
+      try {
+         const userId = req.user.user;
+         const user = await User.findById(userId).select("-token")
+         if(!user){
+            return res.status(200).json({success:false,message:"User data not found!"});
+         }
+         return res.status(200).json({success:true,message:"User Details!",data:user});
+      } catch (error) {
+         console.log(error.message);
+         return res.status(500).json({success:false,message:"Internal server error"});
+      }
+})
 
 module.exports = {
     registerUser,
@@ -186,6 +199,7 @@ module.exports = {
     getAllUsers,
     getSingleUser,
     deleteUser,
-    updateUser
+    updateUser,
+    getProfile
 
 }

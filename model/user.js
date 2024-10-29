@@ -5,6 +5,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    role: {
+        type: String,
+        enum: ['cac', 'admin'],
+        default: 'cac'
+    },
     email: {
         type: String,
         required: true

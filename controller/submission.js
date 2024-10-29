@@ -106,8 +106,10 @@ exports.saveStepResponse = async (req, res) => {
     } catch (error) {
         console.error("Error saving step data:", error);
         res.status(500).json({success:false, message: "Error saving step data", error });
+
     }
 };
+
 
 const resetQuestionData = async (userId) => {
 
@@ -258,7 +260,7 @@ exports.submissionList = async (req, res) => {
 exports.submitPreview = async(req,res) => {
     try {
         const userId = req.user.user;
-        console.log('userId :>> ', userId);
+    
         const submissionData = await Submission.findOne({userId:userId,step:"final"});
         if(!submissionData){
             return res.status(200).json({success:false,message:"Submit Preview isn't available"});
@@ -268,6 +270,8 @@ exports.submitPreview = async(req,res) => {
         
     }
 }
+
+
 
 
 
