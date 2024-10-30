@@ -1,24 +1,19 @@
 const Submission = require("../model/submissionForm")
 const Question = require("../model/question")
 const User = require("../model/user");
-let tempStepData = {};
-
 
 exports.saveStepResponse = async (req, res) => {
     const { step, title, answers, subjectCode } = req.body;
     const userId = req.user.user;
 
-    if (["step2", "step3", "step4"].includes(step)) {
-        if (!subjectCode) {
-            return res.status(200).json({ success: false, message: "Please provide subjectCode" });
-        }
+    if (["step2", "step3", "step4"].includes(step) && !subjectCode) {
+        return res.status(200).json({ success: false, message: "Please provide subjectCode" });
     }
 
     try {
-        const questions = await Question.findOne({ step, subjectCode });
-        console.log('questions :>> ', questions);
-        if (!questions) {
-            return res.status(200).json({ message: "Questions not found for this step." });
+        const questionsData = await Question.find({ step, subjectCode });
+        if (!questionsData || questionsData.length === 0) {
+            return res.status(200).json({ success: false, message: "Questions not found for this step." });
         }
 
         // Safely parse the answers data
@@ -28,72 +23,54 @@ exports.saveStepResponse = async (req, res) => {
                 answerData = JSON.parse(answers);
             } catch (e) {
                 return res.status(400).json({
-                    message: "Invalid format for answers data",
                     success: false,
+                    message: "Invalid format for answers data"
                 });
             }
         } else if (typeof answers === "object") {
             answerData = answers;
         } else {
             return res.status(400).json({
-                message: "Invalid format for answers data",
                 success: false,
+                message: "Invalid format for answers data"
             });
         }
 
-        answerData?.forEach((answer) => {
-            const question = questions.questions.find(q => q.id === answer.questionId);
+        // Loop through each question set in questionsData
+        questionsData.forEach(questionSet => {
+            questionSet.questions.forEach((question) => {
+                const answer = answerData.find(ans => ans.questionId === question.id);
+                if (answer) {
+                    if (question.type === "multiselect" || question.type === "option") {
+                        // Reset all options
+                        question.option.forEach(opt => (opt.isChecked = false));
 
-            if (question) {
-                if (question.type === "multiselect") {
-                    question.option?.forEach(opt => {
-                        opt.isChecked = false;
-                    });
+                        let optionsSelected = [];
+                        if (typeof answer.optionsSelected === "string") {
+                            optionsSelected = answer.optionsSelected.split(",");
+                        } else if (Array.isArray(answer.optionsSelected)) {
+                            optionsSelected = answer.optionsSelected;
+                        }
 
-                    let optionsSelected = [];
-                    if (typeof answer.optionsSelected === "string") {
-                        optionsSelected = answer.optionsSelected.split(",");
-                    } else if (Array.isArray(answer.optionsSelected)) {
-                        optionsSelected = answer.optionsSelected;
+                        // Mark selected options
+                        optionsSelected.forEach(selectedOptionId => {
+                            const option = question.option.find(opt => opt.id === selectedOptionId);
+                            if (option) {
+                                option.isChecked = true;
+                            }
+                        });
+                    } else if (question.type === "input") {
+                        question.answer = answer.answer || null;
                     }
 
-                    optionsSelected.forEach(selectedOptionId => {
-                        const option = question.option.find(opt => opt.id === selectedOptionId);
-                        if (option) {
-                            option.isChecked = true;
-                        }
-                    });
-
-                } else if (question.type === "option") {
-                    question.option.forEach(opt => {
-                        opt.isChecked = false;
-                    });
-
-                    let optionsSelected = [];
-                    if (typeof answer.optionsSelected === "string") {
-                        optionsSelected = answer.optionsSelected.split(",");
-                    } else if (Array.isArray(answer.optionsSelected)) {
-                        optionsSelected = answer.optionsSelected;
-                    }
-
-                    optionsSelected.forEach(selectedOptionId => {
-                        const option = question.option.find(opt => opt.id === selectedOptionId);
-                        if (option) {
-                            option.isChecked = true;
-                        }
-                    });
-
-                } else if (question.type === "input") {
-                    question.answer = answer.answer || null;
+                    question.answer = answer.answer || "";
                 }
-                question.answer = answer.answer || "";
-            }
+            });
         });
 
-        await questions.save();
+        await Promise.all(questionsData.map(q => q.save()));
 
         let submission = await Submission.findOne({ userId, step });
-
         if (submission) {
             submission.answers = answerData;
             await submission.save();
@@ -102,37 +79,32 @@ exports.saveStepResponse = async (req, res) => {
             await submission.save();
         }
 
-        res.status(200).json({success:true, message: "Step submitted successfully"});
+        res.status(200).json({ success: true, message: "Step submitted successfully" });
     } catch (error) {
         console.error("Error saving step data:", error);
-        res.status(500).json({success:false, message: "Error saving step data", error });
-
+        res.status(500).json({ success: false, message: "Error saving step data", error: error.message });
     }
 };
 
-
 const resetQuestionData = async (userId) => {
-
     try {
         const allStepSubmissions = await Submission.find({ userId, isFinalSubmission: false });
+        
         for (let submission of allStepSubmissions) {
             const { step, subjectCode } = submission;
+
+            const questionsList = await Question.find({ step, subjectCode });
             
-            const questions = await Question.findOne({ step, subjectCode });
-        
-            if (questions) {
-                questions.questions.forEach(question => {
+            for (let questionDoc of questionsList) {
+                questionDoc.questions.forEach(question => {
                     if (question.type === "multiselect" || question.type === "option") {
                         question.option.forEach(opt => {
                             opt.isChecked = false;
                         });
                     }
                     question.answer = "";
-                    
                 });
-
-                // Save the reset questions
-                await questions.save();
+                await questionDoc.save();
             }
         }
     } catch (error) {
@@ -140,11 +112,11 @@ const resetQuestionData = async (userId) => {
     }
 };
 
+
 exports.submitFinalForm = async (req, res) => {
      const userId = req.user.user
     try {
 
-        // Call the reset function before final submission
         await resetQuestionData(userId);
 
         const allSteps = await Submission.find({ userId });
@@ -163,10 +135,10 @@ exports.submitFinalForm = async (req, res) => {
             isFinalSubmission: true
         });
 
-        await finalSubmission.save();
+         await finalSubmission.save();
 
         // Clean up other step submissions
-        await Submission.deleteMany({ userId, isFinalSubmission: false });
+         await Submission.deleteMany({ userId, isFinalSubmission: false });
 
         res.status(200).json({ message: "Form submitted successfully", data: finalSubmission });
     } catch (error) {

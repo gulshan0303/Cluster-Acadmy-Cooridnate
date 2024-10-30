@@ -7,37 +7,6 @@ const User = require("../model/user");
 const School = require("../model/udise/schooludiseData");
 const CustomError = require("../utils/customErrorHandler");
 
-function getNextId(currentId) {
-  const lastChar = currentId.charCodeAt(currentId.length - 1);
-  return String.fromCharCode(lastChar + 1);
-}
-function getNextSubId(questionId, currentSubId) {
-  const lastChar = currentSubId.charCodeAt(currentSubId.length - 1);
-  return `${questionId}${String.fromCharCode(lastChar + 1)}`;
-}
-
-// exports.createSingleQuestion = async (req, res, next) => {
-//     try {
-//         const { title, subjectCode,isMultiOption, type, questions,step } = req.body;
-
-//          const questionData = {
-//             step,
-//             title,
-//             subjectCode,
-//             type,
-//             questions,
-//             isMultiOption
-//         };
-
-//          const newQuestion = await Question.create(questionData);
-
-//         res.status(201).json({ success: true, message: "Question set added successfully",data:newQuestion});
-//     } catch (error) {
-//         console.error("Error:", error); // Log the error to see more details
-//         res.status(500).json({ success: false, message: "Error adding question set", error: error.message });
-//     }
-// };
-
 exports.createSingleQuestion = async (req, res, next) => {
   try {
     const {
@@ -108,31 +77,28 @@ exports.createSingleQuestion = async (req, res, next) => {
 
 const resetQuestionData = async (userId,stepId,subjectCode) => {
   try {
-      const allStepSubmissions = await Submission.find({ userId,step:stepId, isFinalSubmission: false });
-      if (allStepSubmissions.length === 0) {
-        const defaultStep = stepId;
-        const defaultSubjectCode = subjectCode;
-        const questions = await Question.findOne({ step: defaultStep, subjectCode: defaultSubjectCode });
-        if (questions) {
-            questions.questions.forEach((question) => {
-                if (question.type === "multiselect" || question.type === "option") {
-                    question.option.forEach((opt) => {
-                        opt.isChecked = false; 
-                    });
-                }
-                question.answer = ""; 
-            });
-            await questions.save();
-        }
-
-        return;
-    }
+      const allStepSubmissions = await Submission.find({userId,step:stepId, isFinalSubmission: false });
+      if(allStepSubmissions.length === 0) {
+          const questionsList = await Question.find({ step:stepId, subjectCode:subjectCode });
+          
+          for (let questionDoc of questionsList) {
+              questionDoc.questions.forEach(question => {
+                  if (question.type === "multiselect" || question.type === "option") {
+                      question.option.forEach(opt => {
+                          opt.isChecked = false;
+                      });
+                  }
+                  question.answer = "";
+              });
+              await questionDoc.save();
+          }
+      }
   } catch (error) {
       console.error("Error resetting question data:", error);
   }
 };
 
-//step1 to step3
+
 exports.getQuestions = async (req, res) => {
   try {
     const { stepId } = req.params;
