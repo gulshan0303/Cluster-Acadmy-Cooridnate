@@ -53,7 +53,7 @@ const mongoose = require('mongoose');
 const optionSchema = new mongoose.Schema({
     id: { type: String, required: true },
     text: { type: String, required: true },
-    isChecked:{type:Boolean,default:false}
+    isChecked:{type:Boolean,default:false},
 }, { _id: false });
 // Define the Question Item Schema correctly
 const questionItemSchema = new mongoose.Schema({

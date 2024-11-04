@@ -46,7 +46,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
             districtId: cacMatched.udise_dist_code || '',
             districtName: cacMatched.Dist || '',
             email: email || '',
-            role:role || 'admin',
+            role:role,
             password: hashedPassword,
         });
 
@@ -85,7 +85,7 @@ const loginUser = asyncHandler(async (req, res, next) => {
        
          const data = {
             ...user.toObject(),
-            role: user ? "CAC" : null,
+            // role: user ? "CAC" : null,
           };
           delete data.password;
           delete data.createdAt;

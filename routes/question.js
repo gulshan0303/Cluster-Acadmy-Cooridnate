@@ -16,13 +16,19 @@ const {
     getMathDataStep_5,
     getfeedback,
     getAdviceData,
-    observationTeachersTime
+    observationTeachersTime,
+    getWeeklyAnalysis,
+    getUseOfWorkBook,
+    getGeneralInformation
 } = require('../controller/question');
 const { verifyToken } = require("../middleware/authentication");
 
 router.post('/single', createSingleQuestion);
 
 router.get('/school-details', verifyToken, schoolDetails);
+router.get('/weekly-analysis', verifyToken, getWeeklyAnalysis);
+router.get('/use-of-workbook', verifyToken, getUseOfWorkBook);
+router.get('/general-information', verifyToken, getGeneralInformation);
 router.post('/inquiry-question', verifyToken, inquiryQuestion);
 
 router.get('/feedback-for-teachers',verifyToken, getfeedback);

@@ -178,42 +178,10 @@ exports.getFilterHindiDataStep_3 = async (req, res) => {
     }
 };
 
-//step3 for math
 exports.getFilterMathDataStep_3 = async (req, res) => {
     try {
         const {associatedQuestionCode } = req.query;
         let filterQuery = { step: "step3",subjectCode:"2" };
-        const userId = req.user.user;
-        await resetQuestionData(userId,filterQuery.step,filterQuery.subjectCode);
-
-        const questions = await Question.find(filterQuery);
-  
-        if (!questions.length) {
-            return res.status(200).json({
-                success: false,
-                message: "No questions found for the given data",
-                data: [],
-            });
-        }
-  
-        return res.status(200).json({
-            success: true,
-            message: "Filtered questions retrieved successfully",
-            data: questions,
-        });
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json({
-            success: false,
-            message: "An error occurred while fetching data",
-        });
-    }
-};
-
-exports.getFilterMathDataStep_4 = async (req, res) => {
-    try {
-        const {associatedQuestionCode } = req.query;
-        let filterQuery = { step: "step4",subjectCode:"2" };
           
         const userId = req.user.user;
         await resetQuestionData(userId,filterQuery.step,filterQuery.subjectCode);
@@ -341,6 +309,55 @@ exports.getMathDataStep_6 = async(req,res) => {
             message: "An error occurred while fetching data",
         });
     }
+}
+
+//common api for both language
+exports.getWeeklyAnalysis = async(req,res) => {
+  try {
+      const weeklyAnalysis = await Question.findOne({step:"weekly-analysis"});
+      if(!weeklyAnalysis){
+          return res.status(200).json({success:false,message:"Weekly analysis data not found"})
+      }
+      return res.status(200).json({success:true,message:"Weekly analysis data",data:weeklyAnalysis})
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+          success: false,
+          message: "An error occurred while fetching data",
+      });
+  }
+}
+
+exports.getUseOfWorkBook = async(req,res) => {
+  try {
+      const workBook = await Question.findOne({step:"use-of-workbook"});
+      if(!workBook){
+          return res.status(200).json({success:false,message:"data not found"})
+      }
+      return res.status(200).json({success:true,message:"data details",data:workBook})
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+          success: false,
+          message: "An error occurred while fetching data",
+      });
+  }
+}
+
+exports.getGeneralInformation = async(req,res) => {
+  try {
+      const generalInfo = await Question.findOne({step:"general-information"});
+      if(!generalInfo){
+          return res.status(200).json({success:false,message:"data not found"})
+      }
+      return res.status(200).json({success:true,message:"General-Information details",data:generalInfo})
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({
+          success: false,
+          message: "An error occurred while fetching data",
+      });
+  }
 }
 
 exports.observationTeachersTime = async(req,res) => {
